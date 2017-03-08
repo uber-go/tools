@@ -8,6 +8,6 @@ go_import_path: go.uber.org/tools
 matrix:
   fast_finish: true
 install:
-  - make deps
+  - make testdeps
 script:
   - make test
