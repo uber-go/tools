@@ -10,9 +10,15 @@ updatedeps:
 
 testdeps:
 	go get -d -v -t ./...
+	go get -v github.com/kisielk/errcheck
+	go get -v honnef.co/go/tools/cmd/staticcheck
+	go get -v honnef.co/go/tools/cmd/unused
 
 updatetestdeps:
 	go get -d -v -t -u -f ./...
+	go get -u -v github.com/kisielk/errcheck
+	go get -u -v honnef.co/go/tools/cmd/staticcheck
+	go get -u -v honnef.co/go/tools/cmd/unused
 
 install: deps
 	go install ./...
@@ -33,15 +39,12 @@ vet: testdeps
 	go vet ./...
 
 errcheck: testdeps
-	go get -v github.com/kisielk/errcheck
 	errcheck ./...
 
 staticcheck: testdeps
-	go get -v honnef.co/go/tools/cmd/staticcheck
 	staticcheck ./...
 
 unused: testdeps
-	go get -v honnef.co/go/tools/cmd/unused
 	unused ./...
 
 lint: golint vet errcheck staticcheck unused
@@ -59,7 +62,7 @@ clean:
 	testdeps \
 	updatetestdeps \
 	install \
-	dogfood \
+	license \
 	golint \
 	vet \
 	errcheck \
