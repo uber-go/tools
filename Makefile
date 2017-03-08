@@ -1,4 +1,10 @@
 SRCS := $(shell find . -name '*.go')
+LINTERS := \
+	github.com/golang/lint/golint \
+	github.com/kisielk/errcheck \
+	honnef.co/go/tools/cmd/staticcheck \
+	honnef.co/go/tools/cmd/unused
+
 
 .PHONY: all
 all: test
@@ -14,16 +20,12 @@ updatedeps:
 .PHONY: testdeps
 testdeps:
 	go get -d -v -t ./...
-	go get -v github.com/kisielk/errcheck
-	go get -v honnef.co/go/tools/cmd/staticcheck
-	go get -v honnef.co/go/tools/cmd/unused
+	go get -v $(LINTERS)
 
 .PHONY: updatetestdeps
 updatetestdeps:
 	go get -d -v -t -u -f ./...
-	go get -u -v github.com/kisielk/errcheck
-	go get -u -v honnef.co/go/tools/cmd/staticcheck
-	go get -u -v honnef.co/go/tools/cmd/unused
+	go get -u -v $(LINTERS)
 
 .PHONY: install
 install: deps
@@ -35,7 +37,6 @@ license: install
 
 .PHONY: golint
 golint: testdeps
-	go get -v github.com/golang/lint/golint
 	for file in $(SRCS); do \
 		golint $${file}; \
 		if [ -n "$$(golint $${file})" ]; then \
