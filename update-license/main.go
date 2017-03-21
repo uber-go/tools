@@ -153,6 +153,10 @@ func addToLines(lines []string, year int) []string {
 	i := 0
 	for len(lines) > i && lineContainsSkipPrefix(lines[i]) {
 		i++
+		// skip comments under the generated line too
+		for strings.HasPrefix(lines[i], "//") {
+			i++
+		}
 	}
 	if i == 0 {
 		return append([]string{licenseString(year), ""}, lines...)
