@@ -254,7 +254,10 @@ func newRunner(options ...RunnerOption) *runner {
 }
 
 func (r *runner) Run(cmds []*exec.Cmd) error {
-	var retErr error
+	// do not want to acquire lock in the signal handler
+	// do there is a race condition where err could be set to
+	// errCmdFailed or not set at all even after an interrupt happens
+	var err error
 	doneC := make(chan struct{})
 	cmdControllers := make([]*cmdController, len(cmds))
 	for i, cmd := range cmds {
@@ -265,7 +268,7 @@ func (r *runner) Run(cmds []*exec.Cmd) error {
 	signal.Notify(signalC, os.Interrupt)
 	go func() {
 		for _ = range signalC {
-			retErr = errInterrupted
+			err = errInterrupted
 			doneC <- struct{}{}
 			return
 		}
@@ -279,12 +282,14 @@ func (r *runner) Run(cmds []*exec.Cmd) error {
 	for _, cmdController := range cmdControllers {
 		cmdController := cmdController
 		waitGroup.Add(1)
-		semaphore.P(1)
 		go func() {
+			semaphore.P(1)
 			defer semaphore.V(1)
 			defer waitGroup.Done()
 			if !cmdController.Run() {
-				retErr = errCmdFailed
+				// best effort to prioritize the interrupt error
+				// but this is not deterministic
+				err = errCmdFailed
 				if r.options.FastFail {
 					doneC <- struct{}{}
 				}
@@ -292,6 +297,9 @@ func (r *runner) Run(cmds []*exec.Cmd) error {
 		}()
 	}
 	go func() {
+		// if everything finishes and there is an interrupt, we could
+		// end up not actually returning an error if everything below
+		// complietes before we context switch to the interrupt goroutine
 		waitGroup.Wait()
 		doneC <- struct{}{}
 	}()
@@ -300,8 +308,8 @@ func (r *runner) Run(cmds []*exec.Cmd) error {
 		cmdController.Kill()
 	}
 	finishTime := r.options.Timer()
-	r.options.EventHandler(newFinishedEvent(finishTime, startTime, retErr))
-	return retErr
+	r.options.EventHandler(newFinishedEvent(finishTime, startTime, err))
+	return err
 }
 
 type cmdController struct {

@@ -27,14 +27,15 @@ import (
 	"os"
 	"os/exec"
 	"runtime"
-	"strings"
+
+	"github.com/mattn/go-shellwords"
 
 	"go.uber.org/tools/parallel-exec/lib"
 )
 
 var (
 	flagFastFail          = flag.Bool("fast-fail", false, "Fail on the first command failure")
-	flagMaxConcurrentCmds = flag.Int("max-concurrent-cmds", runtime.NumCPU(), "MAximum number of processes to run concurrently")
+	flagMaxConcurrentCmds = flag.Int("max-concurrent-cmds", runtime.NumCPU(), "Maximum number of processes to run concurrently, or unlimited if 0")
 )
 
 func main() {
@@ -63,8 +64,14 @@ func getCmds() ([]*exec.Cmd, error) {
 	scanner := bufio.NewScanner(os.Stdin)
 	for scanner.Scan() {
 		line := scanner.Text()
-		// TODO need to parse properly
-		args := strings.Split(line, " ")
+		if line == "" {
+			continue
+		}
+		args, err := shellwords.Parse(line)
+		if err != nil {
+			return nil, err
+		}
+		// could happen if args = "$FOO" and FOO is not set
 		if len(args) == 0 {
 			continue
 		}
