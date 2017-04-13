@@ -166,7 +166,7 @@ package main`,
 // THE SOFTWARE.
 
 package main`,
-			`// Copyright (c) 2017 Uber Technologies, Inc.
+			`// Copyright (c) 2016-2017 Uber Technologies, Inc.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -215,7 +215,7 @@ package main`,
 package main`,
 			`// @generated
 
-// Copyright (c) 2017 Uber Technologies, Inc.
+// Copyright (c) 2016-2017 Uber Technologies, Inc.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
