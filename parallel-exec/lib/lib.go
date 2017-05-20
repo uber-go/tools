@@ -45,19 +45,13 @@ const (
 	// EventTypeFinished says that the runner finished.
 	EventTypeFinished
 
-	defaultFastFail = false
+	_defaultFastFail = false
 )
 
 var (
-	defaultMaxConcurrentCmds = runtime.NumCPU()
-	defaultEventHandler      = func(event Event) {
-		data, err := json.Marshal(event)
-		if err != nil {
-			log.Print(event.Type())
-		}
-		log.Print(string(data))
-	}
-	defaultTimer = time.Now
+	_defaultMaxConcurrentCmds = runtime.NumCPU()
+	_defaultEventHandler      = logEvent
+	_defaultClock             = time.Now
 
 	errCmdFailed   = errors.New("command failed")
 	errInterrupted = errors.New("interrupted")
@@ -82,20 +76,22 @@ func (e EventType) String() string {
 	}
 }
 
-// ParseEventType parses an EventType from it's string representation.
-func ParseEventType(eventTypeString string) (EventType, error) {
-	switch eventTypeString {
+// UnmarshalText parses an EventType from it's string representation.
+func (e *EventType) UnmarshalText(text []byte) error {
+	textString := strings.ToLower(string(text))
+	switch textString {
 	case "started":
-		return EventTypeStarted, nil
+		*e = EventTypeStarted
 	case "cmd_started":
-		return EventTypeCmdStarted, nil
+		*e = EventTypeCmdStarted
 	case "cmd_finished":
-		return EventTypeCmdFinished, nil
+		*e = EventTypeCmdFinished
 	case "finished":
-		return EventTypeFinished, nil
+		*e = EventTypeFinished
 	default:
-		return 0, fmt.Errorf("unknown EventType string: %s", eventTypeString)
+		return fmt.Errorf("unknown EventType: %s", textString)
 	}
+	return nil
 }
 
 // Event is an event that happens during the runner's run call.
@@ -107,9 +103,6 @@ type Event interface {
 
 // EventHandler handles events.
 type EventHandler func(Event)
-
-// Timer returns the current time.
-type Timer func() time.Time
 
 // RunnerOption is an option for a new Runner.
 type RunnerOption func(*runnerOptions)
@@ -138,11 +131,11 @@ func WithEventHandler(eventHandler EventHandler) RunnerOption {
 	}
 }
 
-// WithTimer returns a RunnerOption that will make the Runner
-// use the given Timer.
-func WithTimer(timer Timer) RunnerOption {
+// WithClock returns a RunnerOption that will make the Runner
+// use the given Clock.
+func WithClock(clock func() time.Time) RunnerOption {
 	return func(runnerOptions *runnerOptions) {
-		runnerOptions.Timer = timer
+		runnerOptions.Clock = clock
 	}
 }
 
@@ -229,15 +222,15 @@ type runnerOptions struct {
 	FastFail          bool
 	MaxConcurrentCmds int
 	EventHandler      EventHandler
-	Timer             Timer
+	Clock             func() time.Time
 }
 
 func newRunnerOptions() *runnerOptions {
 	return &runnerOptions{
-		defaultFastFail,
-		defaultMaxConcurrentCmds,
-		defaultEventHandler,
-		defaultTimer,
+		_defaultFastFail,
+		_defaultMaxConcurrentCmds,
+		_defaultEventHandler,
+		_defaultClock,
 	}
 }
 
@@ -261,7 +254,7 @@ func (r *runner) Run(cmds []*exec.Cmd) error {
 	doneC := make(chan struct{})
 	cmdControllers := make([]*cmdController, len(cmds))
 	for i, cmd := range cmds {
-		cmdControllers[i] = newCmdController(cmd, r.options.EventHandler, r.options.Timer)
+		cmdControllers[i] = newCmdController(cmd, r.options.EventHandler, r.options.Clock)
 	}
 
 	signalC := make(chan os.Signal, 1)
@@ -277,7 +270,7 @@ func (r *runner) Run(cmds []*exec.Cmd) error {
 	var waitGroup sync.WaitGroup
 	semaphore := newSemaphore(r.options.MaxConcurrentCmds)
 
-	startTime := r.options.Timer()
+	startTime := r.options.Clock()
 	r.options.EventHandler(newStartedEvent(startTime))
 	for _, cmdController := range cmdControllers {
 		cmdController := cmdController
@@ -299,7 +292,7 @@ func (r *runner) Run(cmds []*exec.Cmd) error {
 	go func() {
 		// if everything finishes and there is an interrupt, we could
 		// end up not actually returning an error if everything below
-		// complietes before we context switch to the interrupt goroutine
+		// completes before we context switch to the interrupt goroutine
 		waitGroup.Wait()
 		doneC <- struct{}{}
 	}()
@@ -307,7 +300,7 @@ func (r *runner) Run(cmds []*exec.Cmd) error {
 	for _, cmdController := range cmdControllers {
 		cmdController.Kill()
 	}
-	finishTime := r.options.Timer()
+	finishTime := r.options.Clock()
 	r.options.EventHandler(newFinishedEvent(finishTime, startTime, err))
 	return err
 }
@@ -315,15 +308,15 @@ func (r *runner) Run(cmds []*exec.Cmd) error {
 type cmdController struct {
 	Cmd          *exec.Cmd
 	EventHandler EventHandler
-	Timer        Timer
+	Clock        func() time.Time
 	Started      bool
 	Finished     bool
 	StartTime    time.Time
 	Lock         sync.Mutex
 }
 
-func newCmdController(cmd *exec.Cmd, eventHandler EventHandler, timer Timer) *cmdController {
-	return &cmdController{cmd, eventHandler, timer, false, false, timer(), sync.Mutex{}}
+func newCmdController(cmd *exec.Cmd, eventHandler EventHandler, clock func() time.Time) *cmdController {
+	return &cmdController{cmd, eventHandler, clock, false, false, clock(), sync.Mutex{}}
 }
 
 // Run returns false on failure that has not been already handled
@@ -334,11 +327,11 @@ func (c *cmdController) Run() bool {
 		return true
 	}
 	c.Started = true
-	c.StartTime = c.Timer()
+	c.StartTime = c.Clock()
 	c.EventHandler(newCmdStartedEvent(c.StartTime, c.Cmd))
 	if err := c.Cmd.Start(); err != nil {
-		finishTime := c.Timer()
-		err = fmt.Errorf("command could not start: %s: %s", cmdString(c.Cmd), err.Error())
+		finishTime := c.Clock()
+		err = fmt.Errorf("command could not start: %s: %v", cmdString(c.Cmd), err)
 		c.Finished = true
 		c.EventHandler(newCmdFinishedEvent(finishTime, c.Cmd, c.StartTime, err))
 		c.Lock.Unlock()
@@ -346,7 +339,7 @@ func (c *cmdController) Run() bool {
 	}
 	c.Lock.Unlock()
 	err := c.Cmd.Wait()
-	finishTime := c.Timer()
+	finishTime := c.Clock()
 	if err != nil {
 		err = fmt.Errorf("command had error: %s: %s", cmdString(c.Cmd), err.Error())
 	}
@@ -374,7 +367,7 @@ func (c *cmdController) Kill() {
 	c.Finished = true
 	if c.Cmd.Process != nil {
 		err := c.Cmd.Process.Kill()
-		finishTime := c.Timer()
+		finishTime := c.Clock()
 		if err != nil {
 			err = fmt.Errorf("command had error on kill: %s: %s", cmdString(c.Cmd), err.Error())
 		}
@@ -415,4 +408,13 @@ func (s semaphore) V(n int) {
 
 func cmdString(cmd *exec.Cmd) string {
 	return strings.Join(append([]string{cmd.Path}, cmd.Args...), " ")
+}
+
+func logEvent(event Event) {
+	data, err := json.Marshal(event)
+	if err != nil {
+		log.Print(event.Type())
+		return
+	}
+	log.Print(string(data))
 }
