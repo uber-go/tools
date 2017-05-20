@@ -3,4 +3,4 @@ all: run
 
 .PHONY: run
 run:
-	cat commands.txt | go run ../../main.go --fast-fail
+	go run ../../main.go --fast-fail commands.yaml

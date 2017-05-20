@@ -21,8 +21,11 @@
 package main
 
 import (
-	"bufio"
+	"encoding/json"
+	"errors"
 	"flag"
+	"fmt"
+	"io/ioutil"
 	"log"
 	"os"
 	"os/exec"
@@ -31,12 +34,21 @@ import (
 	"go.uber.org/tools/lib/parallel"
 
 	"github.com/mattn/go-shellwords"
+	"gopkg.in/yaml.v2"
 )
 
 var (
 	flagFastFail          = flag.Bool("fast-fail", false, "Fail on the first command failure")
 	flagMaxConcurrentCmds = flag.Int("max-concurrent-cmds", runtime.NumCPU(), "Maximum number of processes to run concurrently, or unlimited if 0")
+
+	errUsage               = fmt.Errorf("Usage: %s configFile", os.Args[0])
+	errConfigNil           = errors.New("config is nil")
+	errConfigCommandsEmpty = errors.New("config commands is empty")
 )
+
+type config struct {
+	Commands []string `json:"commands,omitempty" yaml:"commands,omitempty"`
+}
 
 func main() {
 	log.SetFlags(0)
@@ -48,7 +60,19 @@ func main() {
 }
 
 func do() error {
-	cmds, err := getCmds()
+	if len(flag.Args()) != 1 {
+		log.Fatal(errUsage.Error())
+	}
+	config, err := readConfig(flag.Args()[0])
+	if err != nil {
+		return err
+	}
+	data, err := json.Marshal(config)
+	if err != nil {
+		return err
+	}
+	log.Println(string(data))
+	cmds, err := getCmds(config)
 	if err != nil {
 		return err
 	}
@@ -59,11 +83,34 @@ func do() error {
 	return parallel.NewRunner(runnerOptions...).Run(cmds)
 }
 
-func getCmds() ([]*exec.Cmd, error) {
+func readConfig(configFilePath string) (*config, error) {
+	data, err := ioutil.ReadFile(configFilePath)
+	if err != nil {
+		return nil, err
+	}
+	config := &config{}
+	if err := yaml.Unmarshal(data, config); err != nil {
+		return nil, err
+	}
+	if err := validateConfig(config); err != nil {
+		return nil, err
+	}
+	return config, nil
+}
+
+func validateConfig(config *config) error {
+	if config == nil {
+		return errConfigNil
+	}
+	if len(config.Commands) == 0 {
+		return errConfigCommandsEmpty
+	}
+	return nil
+}
+
+func getCmds(config *config) ([]*exec.Cmd, error) {
 	var cmds []*exec.Cmd
-	scanner := bufio.NewScanner(os.Stdin)
-	for scanner.Scan() {
-		line := scanner.Text()
+	for _, line := range config.Commands {
 		if line == "" {
 			continue
 		}
@@ -76,9 +123,6 @@ func getCmds() ([]*exec.Cmd, error) {
 			continue
 		}
 		cmds = append(cmds, exec.Command(args[0], args[1:]...))
-	}
-	if err := scanner.Err(); err != nil {
-		return nil, err
 	}
 	return cmds, nil
 }
