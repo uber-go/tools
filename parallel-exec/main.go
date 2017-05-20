@@ -21,7 +21,6 @@
 package main
 
 import (
-	"encoding/json"
 	"errors"
 	"flag"
 	"fmt"
@@ -40,6 +39,7 @@ import (
 
 var (
 	flagFastFail          = flag.Bool("fast-fail", false, "Fail on the first command failure")
+	flagNoLog             = flag.Bool("no-log", false, "Do not output logs")
 	flagMaxConcurrentCmds = flag.Int("max-concurrent-cmds", runtime.NumCPU(), "Maximum number of processes to run concurrently, or unlimited if 0")
 
 	errUsage               = fmt.Errorf("Usage: %s configFile", os.Args[0])
@@ -69,16 +69,14 @@ func do() error {
 	if err != nil {
 		return err
 	}
-	data, err := json.Marshal(config)
-	if err != nil {
-		return err
-	}
-	log.Println(string(data))
 	cmds, err := getCmds(config)
 	if err != nil {
 		return err
 	}
 	runnerOptions := []parallel.RunnerOption{parallel.WithMaxConcurrentCmds(*flagMaxConcurrentCmds)}
+	if *flagNoLog {
+		runnerOptions = append(runnerOptions, parallel.WithEventHandler(func(*parallel.Event) {}))
+	}
 	if *flagFastFail {
 		runnerOptions = append(runnerOptions, parallel.WithFastFail())
 	}
