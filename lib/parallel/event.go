@@ -21,72 +21,33 @@
 package parallel
 
 import (
-	"encoding/json"
 	"os/exec"
 	"time"
 )
 
-type event struct {
-	E EventType
-	T time.Time
-	F map[string]string
+func newEvent(e EventType, t time.Time, f map[string]interface{}, err error) *Event {
+	return &Event{e, t, f, err}
 }
 
-func newEvent(e EventType, t time.Time, f map[string]string) *event {
-	return &event{e, t, f}
+func newStartedEvent(t time.Time) *Event {
+	return newEvent(EventTypeStarted, t, nil, nil)
 }
 
-func newStartedEvent(t time.Time) *event {
-	return newEvent(EventTypeStarted, t, nil)
-}
-
-func newCmdStartedEvent(t time.Time, cmd *exec.Cmd) *event {
-	return newEvent(EventTypeCmdStarted, t, map[string]string{
+func newCmdStartedEvent(t time.Time, cmd *exec.Cmd) *Event {
+	return newEvent(EventTypeCmdStarted, t, map[string]interface{}{
 		"cmd": cmdString(cmd),
-	})
+	}, nil)
 }
 
-func newCmdFinishedEvent(t time.Time, cmd *exec.Cmd, startTime time.Time, err error) *event {
-	f := map[string]string{
+func newCmdFinishedEvent(t time.Time, cmd *exec.Cmd, startTime time.Time, err error) *Event {
+	return newEvent(EventTypeCmdFinished, t, map[string]interface{}{
 		"cmd":      cmdString(cmd),
-		"duration": t.Sub(startTime).String(),
-	}
-	if err != nil {
-		f["err"] = err.Error()
-	}
-	return newEvent(EventTypeCmdFinished, t, f)
+		"duration": t.Sub(startTime),
+	}, err)
 }
 
-func newFinishedEvent(t time.Time, startTime time.Time, err error) *event {
-	f := map[string]string{
-		"duration": t.Sub(startTime).String(),
-	}
-	if err != nil {
-		f["err"] = err.Error()
-	}
-	return newEvent(EventTypeFinished, t, f)
-}
-
-func (e *event) Type() EventType {
-	return e.E
-}
-
-func (e *event) Time() time.Time {
-	return e.T
-}
-
-func (e *event) Fields() map[string]string {
-	fields := make(map[string]string, 0)
-	for key, value := range e.F {
-		fields[key] = value
-	}
-	return fields
-}
-
-func (e *event) MarshalJSON() ([]byte, error) {
-	return json.Marshal(map[string]interface{}{
-		"type":   e.E.String(),
-		"time":   e.T,
-		"fields": e.F,
-	})
+func newFinishedEvent(t time.Time, startTime time.Time, err error) *Event {
+	return newEvent(EventTypeFinished, t, map[string]interface{}{
+		"duration": t.Sub(startTime),
+	}, err)
 }

@@ -33,7 +33,7 @@ var errCmdFailed = errors.New("command failed")
 
 type cmdController struct {
 	Cmd          *exec.Cmd
-	EventHandler EventHandler
+	EventHandler func(*Event)
 	Clock        func() time.Time
 	Started      bool
 	Finished     bool
@@ -41,7 +41,7 @@ type cmdController struct {
 	Lock         sync.Mutex
 }
 
-func newCmdController(cmd *exec.Cmd, eventHandler EventHandler, clock func() time.Time) *cmdController {
+func newCmdController(cmd *exec.Cmd, eventHandler func(*Event), clock func() time.Time) *cmdController {
 	return &cmdController{cmd, eventHandler, clock, false, false, clock(), sync.Mutex{}}
 }
 

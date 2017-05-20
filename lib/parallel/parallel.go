@@ -21,21 +21,17 @@
 package parallel
 
 import (
-	"encoding/json"
 	"os/exec"
 	"time"
 )
 
-// Event is an event that happens during the runner's run call.
-type Event interface {
-	json.Marshaler
-	Type() EventType
-	Time() time.Time
-	Fields() map[string]string
+// Event is an event that happens during the runner's Run call.
+type Event struct {
+	Type   EventType              `json:"type,omitempty" yaml:"type,omitempty"`
+	Time   time.Time              `json:"time,omitempty" yaml:"time,omitempty"`
+	Fields map[string]interface{} `json:"fields,omitempty" yaml:"fields,omitempty"`
+	Error  error                  `json:"error,omitempty" yaml:"error,omitempty"`
 }
-
-// EventHandler handles events.
-type EventHandler func(Event)
 
 // RunnerOption is an option for a new Runner.
 type RunnerOption func(*runnerOptions)
@@ -58,7 +54,7 @@ func WithMaxConcurrentCmds(maxConcurrentCmds int) RunnerOption {
 
 // WithEventHandler returns a RunnerOption that will use the
 // given EventHandler.
-func WithEventHandler(eventHandler EventHandler) RunnerOption {
+func WithEventHandler(eventHandler func(*Event)) RunnerOption {
 	return func(runnerOptions *runnerOptions) {
 		runnerOptions.EventHandler = eventHandler
 	}

@@ -38,7 +38,7 @@ var (
 type runnerOptions struct {
 	FastFail          bool
 	MaxConcurrentCmds int
-	EventHandler      EventHandler
+	EventHandler      func(*Event)
 	Clock             func() time.Time
 }
 
@@ -51,10 +51,10 @@ func newRunnerOptions() *runnerOptions {
 	}
 }
 
-func logEvent(event Event) {
+func logEvent(event *Event) {
 	data, err := json.Marshal(event)
 	if err != nil {
-		log.Print(event.Type())
+		log.Print(event.Type)
 		return
 	}
 	log.Print(string(data))
