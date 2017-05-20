@@ -28,7 +28,7 @@ import (
 
 const (
 	// EventTypeStarted says that the runner started.
-	EventTypeStarted EventType = iota
+	EventTypeStarted EventType = iota + 1
 	// EventTypeCmdStarted says that a command started.
 	EventTypeCmdStarted
 	// EventTypeCmdFinished says that a command finished.
