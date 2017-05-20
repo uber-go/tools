@@ -72,18 +72,18 @@ func (r *runner) Run(cmds []*exec.Cmd) error {
 		}
 	}()
 
-	var waitGroup sync.WaitGroup
+	var wg sync.WaitGroup
 	semaphore := newSemaphore(r.MaxConcurrentCmds)
 
 	startTime := r.Clock()
 	r.EventHandler(newStartedEvent(startTime))
 	for _, cmdController := range cmdControllers {
 		cmdController := cmdController
-		waitGroup.Add(1)
+		wg.Add(1)
 		go func() {
 			semaphore.P(1)
 			defer semaphore.V(1)
-			defer waitGroup.Done()
+			defer wg.Done()
 			if !cmdController.Run() {
 				// best effort to prioritize the interrupt error
 				// but this is not deterministic
@@ -98,7 +98,7 @@ func (r *runner) Run(cmds []*exec.Cmd) error {
 		// if everything finishes and there is an interrupt, we could
 		// end up not actually returning an error if everything below
 		// completes before we context switch to the interrupt goroutine
-		waitGroup.Wait()
+		wg.Wait()
 		doneC <- struct{}{}
 	}()
 	<-doneC
