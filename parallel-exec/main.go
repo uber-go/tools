@@ -29,6 +29,7 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"runtime"
 
 	"go.uber.org/tools/lib/parallel"
@@ -47,6 +48,7 @@ var (
 )
 
 type config struct {
+	Dir      string   `json:"dir,omitempty" yaml:"dir,omitempty"`
 	Commands []string `json:"commands,omitempty" yaml:"commands,omitempty"`
 }
 
@@ -92,6 +94,9 @@ func readConfig(configFilePath string) (*config, error) {
 	if err := yaml.Unmarshal(data, config); err != nil {
 		return nil, err
 	}
+	if config.Dir == "" {
+		config.Dir = filepath.Dir(configFilePath)
+	}
 	if err := validateConfig(config); err != nil {
 		return nil, err
 	}
@@ -122,12 +127,11 @@ func getCmds(config *config) ([]*exec.Cmd, error) {
 		if len(args) == 0 {
 			continue
 		}
-		cmds = append(cmds, &exec.Cmd{
-			Path:   args[0],
-			Args:   args[1:],
-			Stdout: os.Stdout,
-			Stderr: os.Stderr,
-		})
+		cmd := exec.Command(args[0], args[1:]...)
+		cmd.Dir = config.Dir
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+		cmds = append(cmds, cmd)
 	}
 	return cmds, nil
 }
