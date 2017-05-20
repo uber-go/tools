@@ -52,8 +52,7 @@ func newRunner(options ...RunnerOption) *runner {
 }
 
 func (r *runner) Run(cmds []*exec.Cmd) error {
-	// do not want to acquire lock in the signal handler
-	// do there is a race condition where err could be set to
+	// there is a race condition where err could be set to
 	// errCmdFailed or not set at all even after an interrupt happens
 	var err error
 	doneC := make(chan struct{})
@@ -66,6 +65,7 @@ func (r *runner) Run(cmds []*exec.Cmd) error {
 	signal.Notify(signalC, os.Interrupt)
 	go func() {
 		for _ = range signalC {
+			// do not want to acquire lock in the signal handler
 			err = errInterrupted
 			doneC <- struct{}{}
 			return
