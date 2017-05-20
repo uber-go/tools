@@ -21,8 +21,24 @@
 package parallel
 
 import (
+	"encoding/json"
+	"log"
 	"os/exec"
+	"runtime"
 	"time"
+)
+
+// DefaultFastFail is the default value for fast fail.
+const DefaultFastFail = false
+
+var (
+	// DefautMaxConcurrentCommands is the default value for the maximum
+	// number of concurrent commands.
+	DefaultMaxConcurrentCmds = runtime.NumCPU()
+	// DefaultEventHandler is the default Event handler.
+	DefaultEventHandler = logEvent
+	// DefaultClock is the default function to use as a clock.
+	DefaultClock = time.Now
 )
 
 // Event is an event that happens during the runner's Run call.
@@ -34,37 +50,37 @@ type Event struct {
 }
 
 // RunnerOption is an option for a new Runner.
-type RunnerOption func(*runnerOptions)
+type RunnerOption func(*runner)
 
 // WithFastFail returns a RunnerOption that will return error fun
 // Run as soon as one of the commands fails.
 func WithFastFail() RunnerOption {
-	return func(runnerOptions *runnerOptions) {
-		runnerOptions.FastFail = true
+	return func(runner *runner) {
+		runner.FastFail = true
 	}
 }
 
 // WithMaxConcurrentCmds returns a RunnerOption that will make the
 // Runner only run maxConcurrentCmds at once, or unlimited if 0.
 func WithMaxConcurrentCmds(maxConcurrentCmds int) RunnerOption {
-	return func(runnerOptions *runnerOptions) {
-		runnerOptions.MaxConcurrentCmds = maxConcurrentCmds
+	return func(runner *runner) {
+		runner.MaxConcurrentCmds = maxConcurrentCmds
 	}
 }
 
 // WithEventHandler returns a RunnerOption that will use the
 // given EventHandler.
 func WithEventHandler(eventHandler func(*Event)) RunnerOption {
-	return func(runnerOptions *runnerOptions) {
-		runnerOptions.EventHandler = eventHandler
+	return func(runner *runner) {
+		runner.EventHandler = eventHandler
 	}
 }
 
 // WithClock returns a RunnerOption that will make the Runner
 // use the given Clock.
 func WithClock(clock func() time.Time) RunnerOption {
-	return func(runnerOptions *runnerOptions) {
-		runnerOptions.Clock = clock
+	return func(runner *runner) {
+		runner.Clock = clock
 	}
 }
 
@@ -80,4 +96,13 @@ type Runner interface {
 // NewRunner returns a new Runner.
 func NewRunner(options ...RunnerOption) Runner {
 	return newRunner(options...)
+}
+
+func logEvent(event *Event) {
+	data, err := json.Marshal(event)
+	if err != nil {
+		log.Print(event.Type)
+		return
+	}
+	log.Print(string(data))
 }

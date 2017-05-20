@@ -26,20 +26,29 @@ import (
 	"os/exec"
 	"os/signal"
 	"sync"
+	"time"
 )
 
 var errInterrupted = errors.New("interrupted")
 
 type runner struct {
-	options *runnerOptions
+	FastFail          bool
+	MaxConcurrentCmds int
+	EventHandler      func(*Event)
+	Clock             func() time.Time
 }
 
 func newRunner(options ...RunnerOption) *runner {
-	runnerOptions := newRunnerOptions()
-	for _, option := range options {
-		option(runnerOptions)
+	runner := &runner{
+		DefaultFastFail,
+		DefaultMaxConcurrentCmds,
+		DefaultEventHandler,
+		DefaultClock,
 	}
-	return &runner{runnerOptions}
+	for _, option := range options {
+		option(runner)
+	}
+	return runner
 }
 
 func (r *runner) Run(cmds []*exec.Cmd) error {
@@ -50,7 +59,7 @@ func (r *runner) Run(cmds []*exec.Cmd) error {
 	doneC := make(chan struct{})
 	cmdControllers := make([]*cmdController, len(cmds))
 	for i, cmd := range cmds {
-		cmdControllers[i] = newCmdController(cmd, r.options.EventHandler, r.options.Clock)
+		cmdControllers[i] = newCmdController(cmd, r.EventHandler, r.Clock)
 	}
 
 	signalC := make(chan os.Signal, 1)
@@ -64,10 +73,10 @@ func (r *runner) Run(cmds []*exec.Cmd) error {
 	}()
 
 	var waitGroup sync.WaitGroup
-	semaphore := newSemaphore(r.options.MaxConcurrentCmds)
+	semaphore := newSemaphore(r.MaxConcurrentCmds)
 
-	startTime := r.options.Clock()
-	r.options.EventHandler(newStartedEvent(startTime))
+	startTime := r.Clock()
+	r.EventHandler(newStartedEvent(startTime))
 	for _, cmdController := range cmdControllers {
 		cmdController := cmdController
 		waitGroup.Add(1)
@@ -79,7 +88,7 @@ func (r *runner) Run(cmds []*exec.Cmd) error {
 				// best effort to prioritize the interrupt error
 				// but this is not deterministic
 				err = errCmdFailed
-				if r.options.FastFail {
+				if r.FastFail {
 					doneC <- struct{}{}
 				}
 			}
@@ -96,7 +105,7 @@ func (r *runner) Run(cmds []*exec.Cmd) error {
 	for _, cmdController := range cmdControllers {
 		cmdController.Kill()
 	}
-	finishTime := r.options.Clock()
-	r.options.EventHandler(newFinishedEvent(finishTime, startTime, err))
+	finishTime := r.Clock()
+	r.EventHandler(newFinishedEvent(finishTime, startTime, err))
 	return err
 }
