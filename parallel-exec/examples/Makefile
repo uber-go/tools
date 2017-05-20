@@ -18,4 +18,4 @@ success: $(BIN)
 
 .PHONY: one-failure
 one-failure: $(BIN)
-	$(BIN) $(FLAGS) config/one-failure.yaml
+	$(BIN) $(FLAGS) config/one-failure.yaml || true
