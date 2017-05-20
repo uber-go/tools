@@ -21,6 +21,7 @@
 package main
 
 import (
+	"encoding/json"
 	"errors"
 	"flag"
 	"fmt"
@@ -38,9 +39,10 @@ import (
 )
 
 var (
+	flagDir               = flag.String("dir", "", "The directory to run the commands in")
 	flagFastFail          = flag.Bool("fast-fail", false, "Fail on the first command failure")
-	flagNoLog             = flag.Bool("no-log", false, "Do not output logs")
 	flagMaxConcurrentCmds = flag.Int("max-concurrent-cmds", runtime.NumCPU(), "Maximum number of processes to run concurrently, or unlimited if 0")
+	flagNoLog             = flag.Bool("no-log", false, "Do not output logs")
 
 	errUsage               = fmt.Errorf("Usage: %s configFile", os.Args[0])
 	errConfigNil           = errors.New("config is nil")
@@ -69,6 +71,13 @@ func do() error {
 	if err != nil {
 		return err
 	}
+	if !*flagNoLog {
+		data, err := json.Marshal(config)
+		if err != nil {
+			return err
+		}
+		log.Print(string(data))
+	}
 	cmds, err := getCmds(config)
 	if err != nil {
 		return err
@@ -94,6 +103,8 @@ func readConfig(configFilePath string) (*config, error) {
 	}
 	if config.Dir == "" {
 		config.Dir = filepath.Dir(configFilePath)
+	} else if !filepath.IsAbs(config.Dir) {
+		config.Dir = filepath.Join(filepath.Dir(configFilePath), config.Dir)
 	}
 	if err := validateConfig(config); err != nil {
 		return nil, err
@@ -126,7 +137,11 @@ func getCmds(config *config) ([]*exec.Cmd, error) {
 			continue
 		}
 		cmd := exec.Command(args[0], args[1:]...)
-		cmd.Dir = config.Dir
+		if *flagDir != "" {
+			cmd.Dir = *flagDir
+		} else {
+			cmd.Dir = config.Dir
+		}
 		cmd.Stdout = os.Stdout
 		cmd.Stderr = os.Stderr
 		cmds = append(cmds, cmd)
