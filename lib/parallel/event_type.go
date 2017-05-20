@@ -56,6 +56,11 @@ func (e EventType) String() string {
 	}
 }
 
+// MarshalJSON marshals the EventType to JSON.
+func (e EventType) MarshalJSON() ([]byte, error) {
+	return []byte(`"` + e.String() + `"`), nil
+}
+
 // UnmarshalText parses an EventType from it's string representation.
 func (e *EventType) UnmarshalText(text []byte) error {
 	textString := strings.ToLower(string(text))

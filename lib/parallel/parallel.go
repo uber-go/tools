@@ -30,7 +30,7 @@ type Event struct {
 	Type   EventType              `json:"type,omitempty" yaml:"type,omitempty"`
 	Time   time.Time              `json:"time,omitempty" yaml:"time,omitempty"`
 	Fields map[string]interface{} `json:"fields,omitempty" yaml:"fields,omitempty"`
-	Error  error                  `json:"error,omitempty" yaml:"error,omitempty"`
+	Error  string                 `json:"error,omitempty" yaml:"error,omitempty"`
 }
 
 // RunnerOption is an option for a new Runner.

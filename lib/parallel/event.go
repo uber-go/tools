@@ -26,7 +26,11 @@ import (
 )
 
 func newEvent(e EventType, t time.Time, f map[string]interface{}, err error) *Event {
-	return &Event{e, t, f, err}
+	errString := ""
+	if err != nil {
+		errString = err.Error()
+	}
+	return &Event{e, t, f, errString}
 }
 
 func newStartedEvent(t time.Time) *Event {
@@ -42,12 +46,12 @@ func newCmdStartedEvent(t time.Time, cmd *exec.Cmd) *Event {
 func newCmdFinishedEvent(t time.Time, cmd *exec.Cmd, startTime time.Time, err error) *Event {
 	return newEvent(EventTypeCmdFinished, t, map[string]interface{}{
 		"cmd":      cmdString(cmd),
-		"duration": t.Sub(startTime),
+		"duration": t.Sub(startTime).String(),
 	}, err)
 }
 
 func newFinishedEvent(t time.Time, startTime time.Time, err error) *Event {
 	return newEvent(EventTypeFinished, t, map[string]interface{}{
-		"duration": t.Sub(startTime),
+		"duration": t.Sub(startTime).String(),
 	}, err)
 }
