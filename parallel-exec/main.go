@@ -122,7 +122,12 @@ func getCmds(config *config) ([]*exec.Cmd, error) {
 		if len(args) == 0 {
 			continue
 		}
-		cmds = append(cmds, exec.Command(args[0], args[1:]...))
+		cmds = append(cmds, &exec.Cmd{
+			Path:   args[0],
+			Args:   args[1:],
+			Stdout: os.Stdout,
+			Stderr: os.Stderr,
+		})
 	}
 	return cmds, nil
 }
