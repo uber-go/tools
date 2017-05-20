@@ -28,9 +28,9 @@ import (
 	"os/exec"
 	"runtime"
 
-	"github.com/mattn/go-shellwords"
+	"go.uber.org/tools/lib/parallel"
 
-	"go.uber.org/tools/parallel-exec/lib"
+	"github.com/mattn/go-shellwords"
 )
 
 var (
@@ -52,11 +52,11 @@ func do() error {
 	if err != nil {
 		return err
 	}
-	runnerOptions := []lib.RunnerOption{lib.WithMaxConcurrentCmds(*flagMaxConcurrentCmds)}
+	runnerOptions := []parallel.RunnerOption{parallel.WithMaxConcurrentCmds(*flagMaxConcurrentCmds)}
 	if *flagFastFail {
-		runnerOptions = append(runnerOptions, lib.WithFastFail())
+		runnerOptions = append(runnerOptions, parallel.WithFastFail())
 	}
-	return lib.NewRunner(runnerOptions...).Run(cmds)
+	return parallel.NewRunner(runnerOptions...).Run(cmds)
 }
 
 func getCmds() ([]*exec.Cmd, error) {
