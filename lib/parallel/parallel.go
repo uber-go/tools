@@ -22,6 +22,7 @@ package parallel
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"os/exec"
 	"runtime"
@@ -84,13 +85,35 @@ func WithClock(clock func() time.Time) RunnerOption {
 	}
 }
 
+// Cmd is a command to run.
+type Cmd interface {
+	fmt.Stringer
+	Start() error
+	Wait() error
+	Kill() error
+}
+
+// ExecCmd returns a new Cmd for the given exec.Cmd.
+func ExecCmd(cmd *exec.Cmd) Cmd {
+	return newExecCmd(cmd)
+}
+
+// ExecCmds returns a slice of Cmds for the given exec.Cmds.
+func ExecCmds(cmds []*exec.Cmd) []Cmd {
+	execCmds := make([]Cmd, len(cmds))
+	for i, cmd := range cmds {
+		execCmds[i] = ExecCmd(cmd)
+	}
+	return execCmds
+}
+
 // Runner runs the commands.
 type Runner interface {
 	// Run the commands.
 	//
 	// Return error if there was an initialization error, or any of
 	// the running commands returned with a non-zero exit code.
-	Run(cmds []*exec.Cmd) error
+	Run(cmds []Cmd) error
 }
 
 // NewRunner returns a new Runner.

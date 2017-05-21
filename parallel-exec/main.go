@@ -89,7 +89,7 @@ func do() error {
 	if *flagFastFail {
 		runnerOptions = append(runnerOptions, parallel.WithFastFail())
 	}
-	return parallel.NewRunner(runnerOptions...).Run(cmds)
+	return parallel.NewRunner(runnerOptions...).Run(parallel.ExecCmds(cmds))
 }
 
 func readConfig(configFilePath string) (*config, error) {

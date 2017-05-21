@@ -79,12 +79,6 @@ func newSimpleCmd(sleepSec int, echoString string, exitCode int) *exec.Cmd {
 	)
 }
 
-func setStdoutForCmds(cmds []*exec.Cmd, stdout io.Writer) {
-	for _, cmd := range cmds {
-		cmd.Stdout = stdout
-	}
-}
-
 type testEnv struct {
 	maxConcurrentCmds int
 	cmds              []*exec.Cmd
@@ -116,11 +110,12 @@ func newTestEnv(maxConcurrentCmds int, cmds []*exec.Cmd) *testEnv {
 }
 
 func (e *testEnv) run() error {
-	return e.runner.Run(e.cmds)
+	return e.runner.Run(ExecCmds(e.cmds))
 }
 
 type testEventHandler struct {
 	events []*Event
+	lock   sync.RWMutex
 }
 
 func newTestEventHandler() *testEventHandler {
@@ -128,10 +123,14 @@ func newTestEventHandler() *testEventHandler {
 }
 
 func (e *testEventHandler) Handle(event *Event) {
+	e.lock.Lock()
+	defer e.lock.Unlock()
 	e.events = append(e.events, event)
 }
 
 func (e *testEventHandler) EventsForType(eventType EventType) []*Event {
+	e.lock.RLock()
+	defer e.lock.RUnlock()
 	var eventsForType []*Event
 	for _, event := range e.events {
 		if event.Type == eventType {

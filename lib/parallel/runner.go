@@ -23,7 +23,6 @@ package parallel
 import (
 	"errors"
 	"os"
-	"os/exec"
 	"os/signal"
 	"sync"
 	"time"
@@ -51,7 +50,7 @@ func newRunner(options ...RunnerOption) *runner {
 	return runner
 }
 
-func (r *runner) Run(cmds []*exec.Cmd) error {
+func (r *runner) Run(cmds []Cmd) error {
 	// there is a race condition where err could be set to
 	// errCmdFailed or not set at all even after an interrupt happens
 	var err error

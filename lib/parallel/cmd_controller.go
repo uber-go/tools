@@ -23,8 +23,6 @@ package parallel
 import (
 	"errors"
 	"fmt"
-	"os/exec"
-	"strings"
 	"sync"
 	"time"
 )
@@ -32,7 +30,7 @@ import (
 var errCmdFailed = errors.New("command failed")
 
 type cmdController struct {
-	Cmd          *exec.Cmd
+	Cmd          Cmd
 	EventHandler func(*Event)
 	Clock        func() time.Time
 	Started      bool
@@ -41,7 +39,7 @@ type cmdController struct {
 	Lock         sync.Mutex
 }
 
-func newCmdController(cmd *exec.Cmd, eventHandler func(*Event), clock func() time.Time) *cmdController {
+func newCmdController(cmd Cmd, eventHandler func(*Event), clock func() time.Time) *cmdController {
 	return &cmdController{cmd, eventHandler, clock, false, false, clock(), sync.Mutex{}}
 }
 
@@ -57,7 +55,7 @@ func (c *cmdController) Run() bool {
 	c.EventHandler(newCmdStartedEvent(c.StartTime, c.Cmd))
 	if err := c.Cmd.Start(); err != nil {
 		finishTime := c.Clock()
-		err = fmt.Errorf("command could not start: %s: %v", cmdString(c.Cmd), err)
+		err = fmt.Errorf("command could not start: %v: %v", c.Cmd, err)
 		c.Finished = true
 		c.EventHandler(newCmdFinishedEvent(finishTime, c.Cmd, c.StartTime, err))
 		c.Lock.Unlock()
@@ -67,7 +65,7 @@ func (c *cmdController) Run() bool {
 	err := c.Cmd.Wait()
 	finishTime := c.Clock()
 	if err != nil {
-		err = fmt.Errorf("command had error: %s: %s", cmdString(c.Cmd), err.Error())
+		err = fmt.Errorf("command had error: %v: %v", c.Cmd, err)
 	}
 	c.Lock.Lock()
 	defer c.Lock.Unlock()
@@ -91,16 +89,10 @@ func (c *cmdController) Kill() {
 		return
 	}
 	c.Finished = true
-	if c.Cmd.Process != nil {
-		err := c.Cmd.Process.Kill()
-		finishTime := c.Clock()
-		if err != nil {
-			err = fmt.Errorf("command had error on kill: %s: %s", cmdString(c.Cmd), err.Error())
-		}
-		c.EventHandler(newCmdFinishedEvent(finishTime, c.Cmd, c.StartTime, err))
+	err := c.Cmd.Kill()
+	finishTime := c.Clock()
+	if err != nil {
+		err = fmt.Errorf("command had error on kill: %v: %v", c.Cmd, err)
 	}
-}
-
-func cmdString(cmd *exec.Cmd) string {
-	return strings.Join(append([]string{cmd.Path}, cmd.Args...), " ")
+	c.EventHandler(newCmdFinishedEvent(finishTime, c.Cmd, c.StartTime, err))
 }

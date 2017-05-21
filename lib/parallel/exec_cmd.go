@@ -20,35 +20,26 @@
 
 package parallel
 
-import "time"
+import (
+	"os/exec"
+	"strings"
+)
 
-func newEvent(e EventType, t time.Time, f map[string]interface{}, err error) *Event {
-	errString := ""
-	if err != nil {
-		errString = err.Error()
+type execCmd struct {
+	*exec.Cmd
+}
+
+func newExecCmd(cmd *exec.Cmd) *execCmd {
+	return &execCmd{cmd}
+}
+
+func (e *execCmd) Kill() error {
+	if e.Process != nil {
+		return e.Process.Kill()
 	}
-	return &Event{e, t, f, errString}
+	return nil
 }
 
-func newStartedEvent(t time.Time) *Event {
-	return newEvent(EventTypeStarted, t, nil, nil)
-}
-
-func newCmdStartedEvent(t time.Time, cmd Cmd) *Event {
-	return newEvent(EventTypeCmdStarted, t, map[string]interface{}{
-		"cmd": cmd.String(),
-	}, nil)
-}
-
-func newCmdFinishedEvent(t time.Time, cmd Cmd, startTime time.Time, err error) *Event {
-	return newEvent(EventTypeCmdFinished, t, map[string]interface{}{
-		"cmd":      cmd.String(),
-		"duration": t.Sub(startTime).String(),
-	}, err)
-}
-
-func newFinishedEvent(t time.Time, startTime time.Time, err error) *Event {
-	return newEvent(EventTypeFinished, t, map[string]interface{}{
-		"duration": t.Sub(startTime).String(),
-	}, err)
+func (e *execCmd) String() string {
+	return strings.Join(append([]string{e.Path}, e.Args...), " ")
 }
