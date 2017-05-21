@@ -64,7 +64,8 @@ func TestError(t *testing.T) {
 
 	testEnv.eventHandler.StartedEventSuccess(t)
 	testEnv.eventHandler.FinishedEventError(t)
-	testEnv.eventHandler.NumEventsForTypeSuccess(t, EventTypeCmdStarted, 4)
+	testEnv.eventHandler.NumEventsForTypeSuccess(t, EventTypeCmdStarted, 5)
+	testEnv.eventHandler.NumEventsForTypeSuccess(t, EventTypeCmdFinished, 4)
 	testEnv.eventHandler.NumEventsForTypeError(t, EventTypeCmdFinished, 1)
 	require.Equal(t, []string{"1", "2", "3", "4", "5"}, testEnv.stdout.SortedLines(t))
 }
