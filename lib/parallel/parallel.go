@@ -32,7 +32,7 @@ import (
 const DefaultFastFail = false
 
 var (
-	// DefautMaxConcurrentCommands is the default value for the maximum
+	// DefaultMaxConcurrentCmds is the default value for the maximum
 	// number of concurrent commands.
 	DefaultMaxConcurrentCmds = runtime.NumCPU()
 	// DefaultEventHandler is the default Event handler.
