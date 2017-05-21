@@ -37,6 +37,13 @@ const (
 	EventTypeFinished
 )
 
+var allEventTypes = []EventType{
+	EventTypeStarted,
+	EventTypeCmdStarted,
+	EventTypeCmdFinished,
+	EventTypeFinished,
+}
+
 // EventType is an event type during the runner's run call.
 type EventType int
 
@@ -61,10 +68,33 @@ func (e EventType) MarshalJSON() ([]byte, error) {
 	return []byte(`"` + e.String() + `"`), nil
 }
 
-// UnmarshalText parses an EventType from it's string representation.
-func (e *EventType) UnmarshalText(text []byte) error {
-	textString := strings.ToLower(string(text))
-	switch textString {
+// UnmarshalJSON unmarshals the EventType from JSON.
+func (e *EventType) UnmarshalJSON(data []byte) error {
+	dataString := strings.ToLower(string(data))
+	switch dataString {
+	case `"started"`:
+		*e = EventTypeStarted
+	case `"cmd_started"`:
+		*e = EventTypeCmdStarted
+	case `"cmd_finished"`:
+		*e = EventTypeCmdFinished
+	case `"finished"`:
+		*e = EventTypeFinished
+	default:
+		return invalidEventType(data, "json")
+	}
+	return nil
+}
+
+// MarshalText marshals the EventType to text.
+func (e EventType) MarshalText() ([]byte, error) {
+	return []byte(e.String()), nil
+}
+
+// UnmarshalText unmarshals the EventType from text.
+func (e *EventType) UnmarshalText(data []byte) error {
+	dataString := strings.ToLower(string(data))
+	switch dataString {
 	case "started":
 		*e = EventTypeStarted
 	case "cmd_started":
@@ -74,7 +104,11 @@ func (e *EventType) UnmarshalText(text []byte) error {
 	case "finished":
 		*e = EventTypeFinished
 	default:
-		return fmt.Errorf("unknown EventType: %s", textString)
+		return invalidEventType(data, "text")
 	}
 	return nil
+}
+
+func invalidEventType(data []byte, format string) error {
+	return fmt.Errorf("invalid EventType for %s: %s", format, string(data))
 }
