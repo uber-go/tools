@@ -78,7 +78,7 @@ func do() error {
 		}
 		log.Print(string(data))
 	}
-	cmds, err := getCmds(config)
+	cmds, err := getCmds(config, *flagDir)
 	if err != nil {
 		return err
 	}
@@ -122,7 +122,7 @@ func validateConfig(config *config) error {
 	return nil
 }
 
-func getCmds(config *config) ([]*exec.Cmd, error) {
+func getCmds(config *config, dirPath string) ([]*exec.Cmd, error) {
 	var cmds []*exec.Cmd
 	for _, line := range config.Commands {
 		if line == "" {
@@ -137,8 +137,8 @@ func getCmds(config *config) ([]*exec.Cmd, error) {
 			continue
 		}
 		cmd := exec.Command(args[0], args[1:]...)
-		if *flagDir != "" {
-			cmd.Dir = *flagDir
+		if dirPath != "" {
+			cmd.Dir = dirPath
 		} else {
 			cmd.Dir = config.Dir
 		}
