@@ -51,6 +51,24 @@ func TestBasic(t *testing.T) {
 	require.Equal(t, []string{"1", "2", "3", "4", "5"}, testEnv.stdout.SortedLines(t))
 }
 
+func TestError(t *testing.T) {
+	cmds := []*exec.Cmd{
+		newSimpleCmd(0, "1", 0),
+		newSimpleCmd(0, "2", 1),
+		newSimpleCmd(0, "3", 0),
+		newSimpleCmd(0, "4", 0),
+		newSimpleCmd(0, "5", 0),
+	}
+	testEnv := newTestEnv(5, cmds)
+	require.Error(t, testEnv.run())
+
+	testEnv.eventHandler.StartedEventSuccess(t)
+	testEnv.eventHandler.FinishedEventError(t)
+	testEnv.eventHandler.NumEventsForTypeSuccess(t, EventTypeCmdStarted, 4)
+	testEnv.eventHandler.NumEventsForTypeError(t, EventTypeCmdFinished, 1)
+	require.Equal(t, []string{"1", "2", "3", "4", "5"}, testEnv.stdout.SortedLines(t))
+}
+
 func newSimpleCmd(sleepSec int, echoString string, exitCode int) *exec.Cmd {
 	return exec.Command(
 		"./testdata/bin/simple.sh",
