@@ -28,7 +28,7 @@ import (
 	"time"
 )
 
-var errInterrupted = errors.New("interrupted")
+var errInterrupted = errors.New("runner interrupted by signal")
 
 type runner struct {
 	FastFail          bool
@@ -63,7 +63,7 @@ func (r *runner) Run(cmds []Cmd) error {
 	signalC := make(chan os.Signal, 1)
 	signal.Notify(signalC, os.Interrupt)
 	go func() {
-		for _ = range signalC {
+		for range signalC {
 			// do not want to acquire lock in the signal handler
 			err = errInterrupted
 			doneC <- struct{}{}
@@ -100,6 +100,7 @@ func (r *runner) Run(cmds []Cmd) error {
 		wg.Wait()
 		doneC <- struct{}{}
 	}()
+	// this waits on command completion, fast failure, or signal
 	<-doneC
 	for _, cmdController := range cmdControllers {
 		cmdController.Kill()

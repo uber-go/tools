@@ -23,7 +23,7 @@ package parallel
 import "time"
 
 func newEvent(e EventType, t time.Time, f map[string]interface{}, err error) *Event {
-	errString := ""
+	var errString string
 	if err != nil {
 		errString = err.Error()
 	}

@@ -24,19 +24,22 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestEventType(t *testing.T) {
 	for _, eventType := range allEventTypes {
-		data, err := eventType.MarshalJSON()
-		assert.NoError(t, err)
-		var unmarshalledEventType EventType
-		assert.NoError(t, (&unmarshalledEventType).UnmarshalJSON(data))
-		assert.Equal(t, eventType, unmarshalledEventType)
+		t.Run(eventType.String(), func(t *testing.T) {
+			data, err := eventType.MarshalJSON()
+			require.NoError(t, err)
+			var unmarshalledEventType EventType
+			require.NoError(t, (&unmarshalledEventType).UnmarshalJSON(data))
+			assert.Equal(t, eventType, unmarshalledEventType)
 
-		data, err = eventType.MarshalText()
-		assert.NoError(t, err)
-		assert.NoError(t, (&unmarshalledEventType).UnmarshalText(data))
-		assert.Equal(t, eventType, unmarshalledEventType)
+			data, err = eventType.MarshalText()
+			require.NoError(t, err)
+			require.NoError(t, (&unmarshalledEventType).UnmarshalText(data))
+			assert.Equal(t, eventType, unmarshalledEventType)
+		})
 	}
 }

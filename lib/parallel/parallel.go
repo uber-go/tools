@@ -88,8 +88,12 @@ func WithClock(clock func() time.Time) RunnerOption {
 // Cmd is a command to run.
 type Cmd interface {
 	fmt.Stringer
+
+	// Start the command.
 	Start() error
+	// Wait for the command to complete and block.
 	Wait() error
+	// Kill the command.
 	Kill() error
 }
 
@@ -124,7 +128,7 @@ func NewRunner(options ...RunnerOption) Runner {
 func logEvent(event *Event) {
 	data, err := json.Marshal(event)
 	if err != nil {
-		log.Print(event.Type)
+		log.Print(event.Type, " ", err)
 		return
 	}
 	log.Print(string(data))
