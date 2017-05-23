@@ -38,7 +38,8 @@ const (
 	// but this was copied from the python script
 	copyrightLineLimit = 5
 	headerPrefix       = "// Copyright (c)"
-	headerFmtString    = headerPrefix + " %d Uber Technologies, Inc."
+	headerSuffix       = " Uber Technologies, Inc."
+	headerFmtString    = headerPrefix + " %d" + headerSuffix
 	licenseFmtString   = headerFmtString + `
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -141,7 +142,10 @@ func updateLines(lines []string, year int) []string {
 			break
 		}
 		if strings.HasPrefix(line, headerPrefix) {
-			lines[i] = headerString(year)
+			if line == headerString(year) {
+				return lines
+			}
+			lines[i] = addYearToHeaderString(line, year)
 			return lines
 		}
 	}
@@ -179,4 +183,8 @@ func headerString(year int) string {
 
 func licenseString(year int) string {
 	return fmt.Sprintf(licenseFmtString, year)
+}
+
+func addYearToHeaderString(headerString string, year int) string {
+	return strings.Replace(headerString, headerSuffix, fmt.Sprintf("-%d", year)+headerSuffix, -1)
 }
