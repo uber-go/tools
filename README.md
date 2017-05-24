@@ -8,7 +8,8 @@ A collection of golang tools used at Uber.
 
 ## Readmes
 
-* [update-license](update-license/README.md)
+* [update-license](cmd/update-license/README.md)
+* [parallel-exec](cmd/parallel-exec/README.md)
 
 ## License
 

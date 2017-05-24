@@ -29,7 +29,7 @@ updatetestdeps:
 
 .PHONY: install
 install: deps
-	go install ./...
+	go install ./cmd/...
 
 .PHONY: license
 license: install

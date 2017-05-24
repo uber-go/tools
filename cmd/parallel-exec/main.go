@@ -32,7 +32,7 @@ import (
 	"path/filepath"
 	"runtime"
 
-	"go.uber.org/tools/lib/parallel"
+	"go.uber.org/tools/parallel"
 
 	"github.com/mattn/go-shellwords"
 	"gopkg.in/yaml.v2"

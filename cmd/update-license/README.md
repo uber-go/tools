@@ -5,7 +5,7 @@ This is a small tool that updates the license header for Uber's open source Gola
 ## Installation
 
 ```
-go get go.uber.org/tools/update-license
+go get go.uber.org/tools/cmd/update-license
 ```
 
 ## Usage

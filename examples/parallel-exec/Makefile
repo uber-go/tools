@@ -1,4 +1,4 @@
-BIN := ../parallel-exec
+BIN := ../../cmd/parallel-exec
 LIB_SRCS := $(wildcard ../../lib/parallel/*.go)
 MAIN_SRCS :=  ../main.go
 SRCS := $(LIB_SRCS) $(MAIN_SRCS)
