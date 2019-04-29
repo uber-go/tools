@@ -1,4 +1,4 @@
-// Copyright (c) 2017 Uber Technologies, Inc.
+// Copyright (c) 2019 Uber Technologies, Inc.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -44,7 +44,7 @@ var (
 	flagMaxConcurrentCmds = flag.Int("max-concurrent-cmds", runtime.NumCPU(), "Maximum number of processes to run concurrently, or unlimited if 0")
 	flagNoLog             = flag.Bool("no-log", false, "Do not output logs")
 
-	errUsage               = fmt.Errorf("Usage: %s configFile", os.Args[0])
+	errUsage               = fmt.Errorf("usage: %s configFile", os.Args[0])
 	errConfigNil           = errors.New("config is nil")
 	errConfigCommandsEmpty = errors.New("config commands is empty")
 )
