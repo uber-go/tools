@@ -1,6 +1,6 @@
 SRCS := $(shell find . -name '*.go')
 LINTERS := \
-	github.com/golang/lint/golint \
+	golang.org/x/lint/golint \
 	github.com/kisielk/errcheck \
 	honnef.co/go/tools/cmd/staticcheck \
 	honnef.co/go/tools/cmd/unused
