@@ -108,19 +108,8 @@ func fullLicense(ts string, year int, owner string) string {
 func validLicenses() []string {
 	res := []string{}
 
-	ls, err := ioutil.ReadDir(licenseDir)
-	if err != nil {
-		log.Fatal("failed to get a list of licenses", err)
-	}
-
-	for _, fi := range ls {
-		if fi.IsDir() {
-			continue
-		}
-
-		if strings.HasSuffix(fi.Name(), licenseExt) {
-			res = append(res, strings.TrimSuffix(fi.Name(), licenseExt))
-		}
+	for k, _ := range licenseTemplates {
+		res = append(res, k)
 	}
 
 	return res
@@ -187,14 +176,7 @@ func updateData(
 	license string,
 	owner string,
 ) []byte {
-	licenseTpl, err := ioutil.ReadFile(
-		filepath.Join(licenseDir, license+licenseExt),
-	)
-	if err != nil {
-		log.Fatal("failed to read the license template", err)
-	}
-
-	licenseText := fullLicense(string(licenseTpl), year, owner)
+	licenseText := fullLicense(string(licenseTemplates[license]), year, owner)
 
 	return []byte(
 		strings.Join(
