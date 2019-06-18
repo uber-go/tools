@@ -108,7 +108,7 @@ func fullLicense(ts string, year int, owner string) string {
 func validLicenses() []string {
 	res := []string{}
 
-	for k, _ := range licenseTemplates {
+	for k := range licenseTemplates {
 		res = append(res, k)
 	}
 
