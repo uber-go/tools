@@ -39,8 +39,6 @@ const (
 	// but this was copied from the python script
 	copyrightLineLimit = 5
 	headerPrefix       = "// Copyright"
-	licenseDir         = "licenses"
-	licenseExt         = ".tpl"
 )
 
 var (
