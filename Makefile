@@ -2,8 +2,7 @@ SRCS := $(shell find . -name '*.go')
 LINTERS := \
 	golang.org/x/lint/golint \
 	github.com/kisielk/errcheck \
-	honnef.co/go/tools/cmd/staticcheck \
-	honnef.co/go/tools/cmd/unused
+	honnef.co/go/tools/cmd/staticcheck
 
 
 .PHONY: all
@@ -56,10 +55,6 @@ errcheck: testdeps
 staticcheck: testdeps
 	staticcheck ./...
 
-.PHONY: unused
-unused: testdeps
-	unused ./...
-
 .PHONY: checklicense
 checklicense: install
 	@echo update-license --dry $(SRCS)
@@ -70,7 +65,7 @@ checklicense: install
 	fi
 
 .PHONY: lint
-lint: golint vet errcheck staticcheck unused checklicense
+lint: golint vet errcheck staticcheck checklicense
 
 .PHONY: test
 test: testdeps lint
