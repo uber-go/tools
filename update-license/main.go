@@ -90,7 +90,7 @@ func fullLicense(ts string, year int, owner string) string {
 	var buf bytes.Buffer
 	t, err := template.New("").Parse(ts)
 	if err != nil {
-		log.Fatal("failed to parse license remplate", err)
+		log.Panic("failed to parse license template", err)
 	}
 
 	data := struct {
@@ -98,7 +98,7 @@ func fullLicense(ts string, year int, owner string) string {
 		Owner string
 	}{year, owner}
 	if err := t.Execute(&buf, data); err != nil {
-		log.Fatal("failed to execture license template", err)
+		log.Panic("failed to execture license template", err)
 	}
 
 	return strings.TrimSpace(buf.String())
@@ -106,12 +106,13 @@ func fullLicense(ts string, year int, owner string) string {
 
 // validLicenses grabs all the license templates from the folder
 func validLicenses() []string {
-	res := []string{}
+	res := make([]string, 0, len(licenseTemplates))
 
 	for k := range licenseTemplates {
 		res = append(res, k)
 	}
 
+	sort.Strings(res)
 	return res
 }
 
